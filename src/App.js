@@ -1,25 +1,22 @@
-import logo from './logo.svg';
+import React from 'react';
+import PDFViewer from './PDFViewer';
+import samplePdf from './sample.pdf';
 import './App.css';
+import { pdfjs, Document, Page } from 'react-pdf';
 
-function App() {
+const App = () => {
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
+  
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <h1>Simple PDF Viewer with line drawing</h1>
+      <PDFViewer pdfFile={samplePdf} />
+      
     </div>
-  );
+  )
 }
 
 export default App;
