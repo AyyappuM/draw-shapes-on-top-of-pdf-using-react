@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { pdfjs, Document, Page } from 'react-pdf';
 import { Stage, Layer, Line } from 'react-konva';
 import Konva from 'konva';
@@ -13,6 +13,12 @@ const PDFViewer = ({pdfFile}) => {
 	const stageRef = useRef(null);
 	const pdfRef = useRef(null);
 	const [coordinates, setCoordinates] = useState({x1: '', y1: '', x2: '', y2: ''});
+	// The output quality can be improved by increasing pageWidth and pageHeight
+	const scale = 2;
+	const pageWidth = 595; // 595
+	const pageHeight = 842; // 842
+	const imageWidth = scale * pageWidth;
+	const imageHeight = scale * pageHeight;
 
 	const handleMouseDown = (e) => {
 		setIsDrawing(true);
@@ -46,7 +52,7 @@ const PDFViewer = ({pdfFile}) => {
 		const pdfPageDataURL = pdfPage.toDataURL("image/jpeg");
 		const drawingsDataURL = stageRef.current.toDataURL({pixelRatio: 2});
 		const pdf = new jsPDF("portrait", "pt", "a4");
-		pdf.addImage(pdfPageDataURL, "JPEG", 0, 0, 2687, 1685);
+		pdf.addImage(pdfPageDataURL, "JPEG", 0, 0, pageWidth, pageHeight); // width, height
 		/*pdf.addImage(drawingsDataURL, "PNG", 0, 0, 2752, 1677);*/
 		pdf.save("annotated_sample.pdf");
 	};
@@ -71,6 +77,12 @@ const PDFViewer = ({pdfFile}) => {
 		setCoordinates({x1: '', y1: '', x2: '', y2: ''});
 	};
 
+	useEffect(() => {
+		const stage = stageRef.current;
+		stage.width(pageWidth);
+		stage.height(pageHeight);
+	});
+
 	pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 		'pdfjs-dist/build/pdf.worker.min.mjs',
 		import.meta.url,
@@ -86,19 +98,19 @@ const PDFViewer = ({pdfFile}) => {
 	        	{showDrawings ? 'Hide annotations': 'Show annotations'}
 	        </button>
 			
-			<div style={{ position: 'relative' }} ref={pdfRef}>
+			<div style={{ position: 'relative', width: `${pageWidth}px`, height: `${pageHeight}px` }} ref={pdfRef}>
 				<Document file={pdfFile}>
-					<Page pageNumber={1} renderTextLayer={false} width={595} height={841}  />
+					<Page pageNumber={1} renderTextLayer={false} width={pageWidth} height={pageHeight}  />
 				</Document>
 				
 				<div style={{ position: 'absolute', top: 0, left: 0 }}>
-					<Stage ref={stageRef} width={595} height={841} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+					<Stage ref={stageRef} width={pageWidth} height={pageHeight} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
 						<Layer visible={showDrawings}>
 							{lines.map((line, index) => (
 								<Line
 									key={index}
 									points={line.points}
-									stroke="green"
+									stroke="blue"
 									strokeWidth={2}
 									tension={0.5}
 									lineCap="round"
