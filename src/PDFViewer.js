@@ -5,6 +5,7 @@ import Konva from 'konva';
 import { render } from 'react-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { PDFDocument, rgb, AnnotationFlags } from 'pdf-lib';
 
 const PDFViewer = ({pdfFile}) => {
 	const [lines, setLines] = useState([]);
@@ -56,6 +57,77 @@ const PDFViewer = ({pdfFile}) => {
 		/*pdf.addImage(drawingsDataURL, "PNG", 0, 0, 2752, 1677);*/
 		pdf.save("annotated_sample.pdf");
 	};
+
+	const downloadPDFWithAnnotations = async () => {
+		const existingPdfBytes = await fetch(pdfFile).then(res => res.arrayBuffer());
+		const pdfDoc = await PDFDocument.load(existingPdfBytes);
+		const page = pdfDoc.getPage(0);
+		lines.forEach(line => {
+			const points = line.points;
+			for (let i = 0; i < points.length - 2; i += 2) {
+				const x1 = points[i];
+				const y1 = points[i+1];
+				const x2 = points[i+2];
+				const y2 = points[i+3];
+
+				/*
+				const annotation = {
+					Type: 'Annot',
+					Subtype: 'Line',
+					Rect: [
+						Math.min(x1, x2), page.getHeight() - Math.max(y1, y2),
+						Math.max(x1, x2), page.getHeight() - Math.min(y1, y2),
+					],
+					Contents: 'Freehand drawing',
+					C: [0, 0, 1],
+					Border: [0, 0, 2],
+					Flags: AnnotationFlags.Print,
+					L: [x1, page.getHeight()-y1, x2, page.getHeight()-y2],
+				};
+
+				page.node.set('Annots', pdfDoc.context.obj([pdfDoc.context.obj(annotation)]));
+				*/
+				/*
+				// create a line annotation
+				const lineAnnotation = {
+					rect: {
+						x: Math.min(x1, x2),
+						y: page.getHeight() - Math.max(y1, y2),
+						width: Math.abs(x2 - x1),
+						height: Math.abs(y2 - y1),
+					},
+					color: rgb(0, 0, 1),
+					contents: 'Freehand drawing',
+				};
+
+				page.drawSvgPath(`M${x1},${page.getHeight()-y1} L${x2},${page.getHeight()-y2}`, {
+					color: rgb(0, 0, 1),
+					thickness: 2,
+				});
+				
+				page.addAnnotation({
+					type: 'Line',
+					...lineAnnotation,
+				});
+				*/
+				
+				page.drawLine({
+					start: { x: x1, y: page.getHeight() - y1 },
+					end: { x: x2, y: page.getHeight() - y2 },
+					color: rgb(0,0,1),
+					thickness: 2,
+				});
+				
+			}
+		});
+		const pdfBytes = await pdfDoc.save();
+
+		const blob = new Blob([pdfBytes], {type: 'application/pdf'});
+		const link = document.createElement('a');
+		link.href = URL.createObjectURL(blob);
+		link.download = 'annotated.pdf';
+		link.click();
+	};
 	
 	const handleDrawLine = () => {
 		const {x1,y1,x2,y2} = coordinates;
@@ -92,7 +164,9 @@ const PDFViewer = ({pdfFile}) => {
 		<div>
 			<h2>PDF Viewer with freehand drawing</h2>
 
-			<button onClick={downloadPDF}>Download PDF with annotations</button>
+			<button onClick={downloadPDF}>Download PDF with annotations as image</button>
+
+			<button onClick={downloadPDFWithAnnotations}>Download PDF with annotations</button>
 	        
 	        <button onClick={toggleDrawings}>
 	        	{showDrawings ? 'Hide annotations': 'Show annotations'}
