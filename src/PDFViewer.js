@@ -189,6 +189,22 @@ const PDFViewer = ({pdfFile}) => {
 		stage.height(pageHeight);
 	});
 
+	useEffect(() => {
+		const handleMouseUp = (e) => {
+			if (showDrawings) {
+				setIsDrawing(false);
+			}
+		};
+
+		// Add event listener for mouseup on the document
+		document.addEventListener('mouseup', handleMouseUp);
+
+		// Clean up the event listener on component unmount
+		return () => {
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+	}, [showDrawings]);
+
 	if (typeof Promise.withResolvers === 'undefined') {
 	    if (window)
 	        // @ts-expect-error This does not exist outside of polyfill which this is doing
