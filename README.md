@@ -6,9 +6,9 @@ npm run start
 
 <ins>Tested with:<ins>
 
-node - 9.8.0
+node - 20.5.0
 
-npm - 5.6.0
+npm - 9.8.0
 
 react - 18.3.1
 
