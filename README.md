@@ -1,8 +1,9 @@
+```
 npm i
-
 npm run start
+```
 
-![image](https://github.com/user-attachments/assets/baf78001-98c1-471b-87dd-a00bb44f9840)
+![image](https://github.com/user-attachments/assets/25e46ff6-c882-42d6-8f63-7afec2376485)
 
 <ins>Tested with:<ins>
 
