@@ -254,6 +254,13 @@ const PDFViewer = ({pdfFile}) => {
 			>
 			    Draw Red Shape
 			</button>
+
+			{/* Textarea to display collected points */}
+			<textarea
+				readOnly
+				value={collectedPoints}
+				style={{ width: 'calc(100% - 20px)', height: '100px', marginTop: '20px', marginLeft: '10px', marginRight: '10px', boxSizing: 'border-box' }}
+			/>
 			
 			<div style={{ position: 'relative', width: `${pageWidth}px`, height: `${pageHeight}px` }} ref={pdfRef}>
 				<Document file={pdfFile}>
@@ -290,14 +297,7 @@ const PDFViewer = ({pdfFile}) => {
 						</Layer>
 					</Stage>
 				</div>
-			</div>
-
-			{/* Textarea to display collected points */}
-			<textarea
-				readOnly
-				value={collectedPoints}
-				style={{ width: '100%', height: '100px', marginTop: '20px' }}
-			/>
+			</div>			
 		</div>
 	);
 };
