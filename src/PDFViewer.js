@@ -141,7 +141,7 @@ const PDFViewer = ({pdfFile}) => {
                     page.drawLine({
                         start: { x: x1, y: page.getHeight() - y1 },
                         end: { x: x2, y: page.getHeight() - y2 },
-                        color: rgb(0, 0, 1), // Blue color
+                        color: colorHex, // Blue color
                         thickness: 2,
                     });
                 }
@@ -325,7 +325,7 @@ const PDFViewer = ({pdfFile}) => {
                                 <Line
                                     key={index}
                                     points={line.points}
-                                    stroke={line.color || 'blue'}
+                                    stroke={line.color || colorHex }
                                     strokeWidth={2}
                                     tension={0.5}
                                     lineCap="round"
