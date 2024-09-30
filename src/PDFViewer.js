@@ -176,12 +176,15 @@ const PDFViewer = ({pdfFile}) => {
     };
 
     const drawRedShape = () => {
-        const newRedLine = lines[lines.length - 1]; // Use the last drawn blue line for red shape
-        if (newRedLine) {
-            setRedLines([...redLines, newRedLine]); // Add the last blue line as a red line
+        // Parse the points from the textarea (collectedPoints)
+        const pointsArray = collectedPoints.split(',').map(point => parseFloat(point.trim()));
+
+        if (pointsArray.length >= 4) { // Ensure we have at least two points (x1, y1, x2, y2)
+            const newRedLine = { points: pointsArray };
+            setRedLines([...redLines, newRedLine]);
         }
     };
-    
+        
     const handleDrawLine = () => {
         if (showDrawings) {
             const {x1,y1,x2,y2} = coordinates;
@@ -278,8 +281,8 @@ const PDFViewer = ({pdfFile}) => {
 
             {/* Textarea to display collected points */}
             <textarea
-                readOnly
                 value={collectedPoints}
+                onChange={(e) => setCollectedPoints(e.target.value)} // Allow editing
                 style={{ width: 'calc(100% - 20px)', height: '100px', marginTop: '20px', marginLeft: '10px', marginRight: '10px', boxSizing: 'border-box' }}
             />
             
