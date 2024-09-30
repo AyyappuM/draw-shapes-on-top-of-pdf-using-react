@@ -26,21 +26,35 @@ const PDFViewer = ({pdfFile}) => {
 
         if (isErasing) {
             // Check for both red and blue lines for erasure
-            const lineIndex = [...redLines, ...lines].findIndex(line => isPointOnLine(line, pos));
+            const allLines = [...redLines, ...lines];
+            let lineIndex = -1;
+
+            // Check in reverse order to prioritize topmost lines
+            for (let i = allLines.length - 1; i >= 0; i--) {
+                if (isPointOnLine(allLines[i], pos)) {
+                    lineIndex = i;
+                    break; // Found the topmost line clicked
+                }
+            }
+
             if (lineIndex !== -1) {
                 if (lineIndex < redLines.length) {
                     // Remove from redLines
                     const newRedLines = [...redLines];
-                    newRedLines.splice(lineIndex, 1);
+                    newRedLines.splice(lineIndex, 1); // Remove the specific red line clicked
                     setRedLines(newRedLines);
                 } else {
                     // Remove from lines
-                    // Instead of removing the specific index, we remove the last line
                     const newLines = [...lines];
-                    if (newLines.length > 0) {
-                        newLines.pop(); // Remove the last element from lines
-                        setLines(newLines);
-                    }
+                    newLines.splice(lineIndex - redLines.length, 1); // Remove the specific line clicked
+                    setLines(newLines);
+                }
+            } else {
+                // If no line was clicked, consider popping the last element
+                const newLines = [...lines];
+                if (newLines.length > 0) {
+                    newLines.pop(); // Remove the last element from lines
+                    setLines(newLines);
                 }
             }
         } else if (showDrawings) {
