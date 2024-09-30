@@ -12,6 +12,7 @@ const PDFViewer = ({pdfFile}) => {
     const [isErasing, setIsErasing] = useState(false);
     const [showDrawings, setShowDrawings] = useState(true);
     const [colorHex, setColorHex] = useState('#000000'); // Default to black
+    const [newOrigin, setNewOrigin] = useState({ x: 0, y: 0 }); // New state for origin coordinates
     const [collectedPoints, setCollectedPoints] = useState(''); // New state to hold the points for the textarea
     const stageRef = useRef(null);
     const pdfRef = useRef(null);
@@ -53,7 +54,7 @@ const PDFViewer = ({pdfFile}) => {
             const stage = stageRef.current;
             const point = stage.getPointerPosition();
             let lastLine = lines[lines.length - 1];
-            lastLine.points = lastLine.points.concat([point.x, point.y]);
+            lastLine.points = lastLine.points.concat([point.x + newOrigin.x, point.y + newOrigin.y]); // Adjust for new origin
             lines.splice(lines.length - 1, 1, lastLine);
             setLines([...lines]);
 
@@ -215,18 +216,21 @@ const PDFViewer = ({pdfFile}) => {
         const pointsArray = collectedPoints.split(',').map(point => parseFloat(point.trim()));
 
         if (pointsArray.length >= 4) { // Ensure we have at least two points (x1, y1, x2, y2)
-            const newShape = { points: pointsArray, color: colorHex }; // Use the selected color from the input field
+            const newShape = {
+                points: pointsArray.map((point, index) => index % 2 === 0 ? point + newOrigin.x : point + newOrigin.y), // Adjust for new origin
+                color: colorHex
+            };
             setLines([...lines, newShape]);
         }
     };
             
     const handleDrawLine = () => {
         if (showDrawings) {
-            const {x1, y1, x2, y2} = coordinates;
-            const parsedX1 = parseFloat(x1);
-            const parsedY1 = parseFloat(y1);
-            const parsedX2 = parseFloat(x2);
-            const parsedY2 = parseFloat(y2);
+            const { x1, y1, x2, y2 } = coordinates;
+            const parsedX1 = parseFloat(x1) + newOrigin.x; // Adjust for new origin
+            const parsedY1 = parseFloat(y1) + newOrigin.y; // Adjust for new origin
+            const parsedX2 = parseFloat(x2) + newOrigin.x; // Adjust for new origin
+            const parsedY2 = parseFloat(y2) + newOrigin.y; // Adjust for new origin
 
             // Only add the line if all coordinates are valid
             if (!isNaN(parsedX1) && !isNaN(parsedY1) && !isNaN(parsedX2) && !isNaN(parsedY2)) {
@@ -331,6 +335,21 @@ const PDFViewer = ({pdfFile}) => {
                 placeholder="Enter color hex code"
                 style={{ marginLeft: '10px', width: '120px' }}
             />
+
+            <div>
+                <input
+                    type="number"
+                    value={newOrigin.x}
+                    onChange={(e) => setNewOrigin({ ...newOrigin, x: parseFloat(e.target.value) })}
+                    placeholder="New Origin X"
+                />
+                <input
+                    type="number"
+                    value={newOrigin.y}
+                    onChange={(e) => setNewOrigin({ ...newOrigin, y: parseFloat(e.target.value) })}
+                    placeholder="New Origin Y"
+                />
+            </div>
 
             {/* Textarea to display collected points */}
             <textarea
