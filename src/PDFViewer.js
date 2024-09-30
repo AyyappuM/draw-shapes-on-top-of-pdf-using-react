@@ -18,8 +18,10 @@ const PDFViewer = ({pdfFile}) => {
     const pdfRef = useRef(null);
     const [coordinates, setCoordinates] = useState({x1: '', y1: '', x2: '', y2: ''});
     const scale = 2;
-    const pageWidth = 595;
-    const pageHeight = 842;
+    const [pageWidth, setPageWidth] = useState(0);
+    const [pageHeight, setPageHeight] = useState(0);
+    //const pageWidth = 595;
+    //const pageHeight = 842;
 
     const handleMouseDown = (e) => {
         const pos = stageRef.current.getPointerPosition();
@@ -159,10 +161,22 @@ const PDFViewer = ({pdfFile}) => {
         return { r, g, b };
     };
 
-    const downloadPDFWithAnnotations = async () => {
+    const initializePDF = async (pdfFile) => {
         const existingPdfBytes = await fetch(pdfFile).then(res => res.arrayBuffer());
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
         const page = pdfDoc.getPage(0);
+
+        // Set the page width and height
+        setPageWidth(page.getWidth());
+        setPageHeight(page.getHeight());
+
+        return pdfDoc;
+    };
+
+    const downloadPDFWithAnnotations = async () => {
+        const pdfDoc = await initializePDF(pdfFile);
+        const page = pdfDoc.getPage(0);
+
 
         // Draw blue lines
         lines.forEach(line => {
@@ -266,6 +280,15 @@ const PDFViewer = ({pdfFile}) => {
     const resetCoordinates = () => {
         setCoordinates({x1: '', y1: '', x2: '', y2: ''});
     };
+
+    useEffect(() => {
+        initializePDF(pdfFile);
+    }, [pdfFile]);
+
+    // Log the dimensions whenever they change
+    useEffect(() => {
+        console.log(pageWidth, pageHeight);
+    }, [pageWidth, pageHeight]);
 
     useEffect(() => {
         console.log('Current lines:', lines);

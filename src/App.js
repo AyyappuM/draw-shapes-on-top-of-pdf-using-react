@@ -1,6 +1,6 @@
 import React from 'react';
 import PDFViewer from './PDFViewer';
-import samplePdf from './sample.pdf';
+import samplePdf from './sample2.pdf';
 import './App.css';
 
 const App = () => {
