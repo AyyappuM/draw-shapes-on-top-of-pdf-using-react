@@ -54,7 +54,7 @@ const PDFViewer = ({pdfFile}) => {
             const stage = stageRef.current;
             const point = stage.getPointerPosition();
             let lastLine = lines[lines.length - 1];
-            lastLine.points = lastLine.points.concat([point.x + newOrigin.x, point.y + newOrigin.y]); // Adjust for new origin
+            lastLine.points = lastLine.points.concat([point.x, point.y]);
             lines.splice(lines.length - 1, 1, lastLine);
             setLines([...lines]);
 
@@ -226,11 +226,11 @@ const PDFViewer = ({pdfFile}) => {
             
     const handleDrawLine = () => {
         if (showDrawings) {
-            const {x1, y1, x2, y2} = coordinates;
-            const parsedX1 = parseFloat(x1);
-            const parsedY1 = parseFloat(y1);
-            const parsedX2 = parseFloat(x2);
-            const parsedY2 = parseFloat(y2);
+            const { x1, y1, x2, y2 } = coordinates;
+            const parsedX1 = parseFloat(x1) + newOrigin.x; // Adjust for new origin
+            const parsedY1 = parseFloat(y1) + newOrigin.y; // Adjust for new origin
+            const parsedX2 = parseFloat(x2) + newOrigin.x; // Adjust for new origin
+            const parsedY2 = parseFloat(y2) + newOrigin.y; // Adjust for new origin
 
             // Only add the line if all coordinates are valid
             if (!isNaN(parsedX1) && !isNaN(parsedY1) && !isNaN(parsedX2) && !isNaN(parsedY2)) {
