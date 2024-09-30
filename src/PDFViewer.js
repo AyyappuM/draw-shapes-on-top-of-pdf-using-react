@@ -34,9 +34,12 @@ const PDFViewer = ({pdfFile}) => {
                     setRedLines(newRedLines);
                 } else {
                     // Remove from lines
+                    // Instead of removing the specific index, we remove the last line
                     const newLines = [...lines];
-                    newLines.splice(lineIndex - redLines.length, 1);
-                    setLines(newLines);
+                    if (newLines.length > 0) {
+                        newLines.pop(); // Remove the last element from lines
+                        setLines(newLines);
+                    }
                 }
             }
         } else if (showDrawings) {
@@ -242,6 +245,10 @@ const PDFViewer = ({pdfFile}) => {
     const resetCoordinates = () => {
         setCoordinates({x1: '', y1: '', x2: '', y2: ''});
     };
+
+    useEffect(() => {
+        console.log('Current lines:', lines);
+    }, [lines]);
 
     useEffect(() => {
         const stage = stageRef.current;
