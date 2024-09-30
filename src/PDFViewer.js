@@ -175,6 +175,9 @@ const PDFViewer = ({pdfFile}) => {
                 const x2 = points[i + 2];
                 const y2 = points[i + 3];
 
+                console.log(page.getHeight());
+                console.log(page.getWidth());
+
                 if (showDrawings) {
                     page.drawLine({
                         start: { x: x1, y: page.getHeight() - y1 },
