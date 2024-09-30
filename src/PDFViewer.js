@@ -153,37 +153,39 @@ const PDFViewer = ({pdfFile}) => {
         // Draw blue lines
         lines.forEach(line => {
             const points = line.points;
+            const { r, g, b } = hexToRgb(line.color || '#000000'); // Use default color if line.color is undefined
+
             for (let i = 0; i < points.length - 2; i += 2) {
-                const x1 = points[i] + newOrigin.x; // Adjust for new origin
-                const y1 = points[i + 1] + newOrigin.y; // Adjust for new origin
-                const x2 = points[i + 2] + newOrigin.x; // Adjust for new origin
-                const y2 = points[i + 3] + newOrigin.y; // Adjust for new origin
+                const x1 = points[i];
+                const y1 = points[i + 1];
+                const x2 = points[i + 2];
+                const y2 = points[i + 3];
 
                 if (showDrawings) {
                     page.drawLine({
                         start: { x: x1, y: page.getHeight() - y1 },
                         end: { x: x2, y: page.getHeight() - y2 },
-                        color: rgb(0, 0, 0), // Black color
+                        color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
                         thickness: 2,
                     });
                 }
             }
         });
 
-        // Draw red lines
+        // Draw red lines (unchanged)
         redLines.forEach(line => {
             const points = line.points;
             for (let i = 0; i < points.length - 2; i += 2) {
-                const x1 = points[i] + newOrigin.x; // Adjust for new origin
-                const y1 = points[i + 1] + newOrigin.y; // Adjust for new origin
-                const x2 = points[i + 2] + newOrigin.x; // Adjust for new origin
-                const y2 = points[i + 3] + newOrigin.y; // Adjust for new origin
+                const x1 = points[i];
+                const y1 = points[i + 1];
+                const x2 = points[i + 2];
+                const y2 = points[i + 3];
 
                 if (showDrawings) {
                     page.drawLine({
                         start: { x: x1, y: page.getHeight() - y1 },
                         end: { x: x2, y: page.getHeight() - y2 },
-                        color: rgb(1, 0, 0), // Red color
+                        color: rgb(1, 0, 0), // Red color remains unchanged
                         thickness: 2,
                     });
                 }
