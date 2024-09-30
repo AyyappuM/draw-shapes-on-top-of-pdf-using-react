@@ -11,6 +11,7 @@ const PDFViewer = ({pdfFile}) => {
     const [isDrawing, setIsDrawing] = useState(false);
     const [isErasing, setIsErasing] = useState(false);
     const [showDrawings, setShowDrawings] = useState(true);
+    const [colorHex, setColorHex] = useState('#000000'); // Default to black
     const [collectedPoints, setCollectedPoints] = useState(''); // New state to hold the points for the textarea
     const stageRef = useRef(null);
     const pdfRef = useRef(null);
@@ -184,19 +185,34 @@ const PDFViewer = ({pdfFile}) => {
             setRedLines([...redLines, newRedLine]);
         }
     };
-        
+
+    // Function to add shape using points from textarea and the chosen color
+    const addShapeUsingPoints = () => {
+        // Parse the points from the textarea (collectedPoints)
+        const pointsArray = collectedPoints.split(',').map(point => parseFloat(point.trim()));
+
+        if (pointsArray.length >= 4) { // Ensure we have at least two points (x1, y1, x2, y2)
+            const newShape = { points: pointsArray, color: colorHex }; // Use the selected color from the input field
+            setLines([...lines, newShape]);
+        }
+    };
+            
     const handleDrawLine = () => {
         if (showDrawings) {
-            const {x1,y1,x2,y2} = coordinates;
+            const {x1, y1, x2, y2} = coordinates;
             const parsedX1 = parseFloat(x1);
             const parsedY1 = parseFloat(y1);
             const parsedX2 = parseFloat(x2);
             const parsedY2 = parseFloat(y2);
+
+            // Only add the line if all coordinates are valid
+            if (!isNaN(parsedX1) && !isNaN(parsedY1) && !isNaN(parsedX2) && !isNaN(parsedY2)) {
+                const newLine = { points: [parsedX1, parsedY1, parsedX2, parsedY2], color: colorHex };
+                setLines([...lines, newLine]);
+            }
             
-            const newLine = {points: [parsedX1, parsedY1, parsedX2, parsedY2]};
-            setLines([...lines, newLine]);
             resetCoordinates();
-        };
+        }
     };
     
     const handleChange = (e) => {
@@ -279,6 +295,16 @@ const PDFViewer = ({pdfFile}) => {
                 Draw Red Shape
             </button>
 
+            {/* New button and color input */}
+            <button onClick={addShapeUsingPoints}>Add shape using points from textarea</button>
+            <input 
+                type="text" 
+                value={colorHex} 
+                onChange={(e) => setColorHex(e.target.value)} 
+                placeholder="Enter color hex code"
+                style={{ marginLeft: '10px', width: '120px' }}
+            />
+
             {/* Textarea to display collected points */}
             <textarea
                 value={collectedPoints}
@@ -299,7 +325,7 @@ const PDFViewer = ({pdfFile}) => {
                                 <Line
                                     key={index}
                                     points={line.points}
-                                    stroke="blue"
+                                    stroke={line.color || 'blue'}
                                     strokeWidth={2}
                                     tension={0.5}
                                     lineCap="round"
