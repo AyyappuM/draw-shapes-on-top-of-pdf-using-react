@@ -15,12 +15,74 @@ const PDFViewer = ({pdfFile}) => {
     const [collectedPoints, setCollectedPoints] = useState(''); // New state to hold the points for the textarea
     const stageRef = useRef(null);
     const pdfRef = useRef(null);
+    const pageRefs = useRef([]); 
     const [coordinates, setCoordinates] = useState({x1: '', y1: '', x2: '', y2: ''});
     const scale = 2;
     const [pageWidth, setPageWidth] = useState(0);
     const [pageHeight, setPageHeight] = useState(0);
-    //const pageWidth = 595;
-    //const pageHeight = 842;
+    const [numPages, setNumPages] = React.useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const onLoadSuccess = ({ numPages }) => {
+        setNumPages(numPages);
+        setCurrentPage(1); // Reset current page to 1 on load
+        // Initialize page refs
+        pageRefs.current = new Array(numPages).fill().map(() => React.createRef());
+    };
+
+    // Handle scroll event to update current page
+    const handleScroll = () => {
+        if (pdfRef.current) {
+          console.log('Scroll event triggered'); // Debugging log
+          const scrollTop = pdfRef.current.scrollTop; // Get current scroll position
+          console.log('scrollTop', scrollTop);
+          let foundPage = 1; // Default to the first page
+          let cumulativeHeight = 0;
+
+          // Calculate cumulative height of each page
+          for (let i = 0; i < numPages; i++) {
+            const pageHeight = pageRefs.current[i]?.current?.clientHeight || 0; // Get the height of the page
+            cumulativeHeight += pageHeight; // Update cumulative height
+
+            // If scrollTop is less than cumulative height, we've found the current page
+            console.log('cumulativeHeight', cumulativeHeight);
+            if (scrollTop < cumulativeHeight) {
+              foundPage = i + 1; // Page number is index + 1
+              break; // Exit the loop once the current page is found
+            }
+          }
+
+          console.log('foundPage', foundPage);
+          // Update the current page only if it changes
+          if (foundPage !== currentPage) {
+            setCurrentPage(foundPage); // Update current page if it changes
+            console.log(`Current page: ${foundPage}`); // Log the current page for debugging
+          }
+        }
+    };
+
+    useEffect(() => {
+        const pdfContainer = pdfRef.current;
+
+        if (pdfContainer) {
+          // Ensure to remove any existing event listeners before adding
+          pdfContainer.removeEventListener('scroll', handleScroll);
+          pdfContainer.addEventListener('scroll', handleScroll);
+          console.log('Scroll event listener added'); // Confirm the listener is added
+        }
+
+        return () => {
+          if (pdfContainer) {
+            pdfContainer.removeEventListener('scroll', handleScroll);
+            console.log('Scroll event listener removed'); // Confirm the listener is removed
+          }
+        };
+    }, [currentPage, numPages]);
+
+    const onPageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        console.log(`Current page: ${pageNumber}`); // Log the current page
+    };
 
     const handleMouseDown = (e) => {
         const pos = stageRef.current.getPointerPosition();
@@ -251,6 +313,10 @@ const PDFViewer = ({pdfFile}) => {
     }, [pageWidth, pageHeight]);
 
     useEffect(() => {
+        console.log(numPages);
+    }, [numPages]);
+
+    useEffect(() => {
         console.log('Current lines:', lines);
     }, [lines]);
 
@@ -350,11 +416,19 @@ const PDFViewer = ({pdfFile}) => {
                 onChange={(e) => setCollectedPoints(e.target.value)} // Allow editing
                 style={{ width: 'calc(100% - 20px)', height: '100px', marginTop: '20px', marginLeft: '10px', marginRight: '10px', boxSizing: 'border-box' }}
             />
-            
-            <div style={{ position: 'relative', width: `${pageWidth}px`, height: `${pageHeight}px` }} ref={pdfRef}>
-                <Document file={pdfFile}>
-                    <Page pageNumber={1} renderTextLayer={false} width={pageWidth} height={pageHeight}  />
+            <div>
+                    <p>Current Page: {currentPage}</p>
+                </div>
+            <div style={{ overflowY: 'scroll', height: '80vh' }} onScroll={handleScroll} ref={pdfRef}>
+                
+                <Document file={pdfFile} onLoadSuccess={onLoadSuccess}>
+                    {Array.from(new Array(numPages), (el, index) => (
+                      <div key={`page_${index + 1}`} ref={pageRefs.current[index]} style={{ padding: '20px' }}>
+                        <Page pageNumber={index + 1} renderTextLayer={false} />
+                      </div>
+                    ))}
                 </Document>
+
                 
                 <div style={{ position: 'absolute', top: 0, left: 0 }}>
                     <Stage ref={stageRef} width={pageWidth} height={pageHeight} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
@@ -374,7 +448,7 @@ const PDFViewer = ({pdfFile}) => {
                         </Layer>
                     </Stage>
                 </div>
-            </div>          
+            </div>         
         </div>
     );
 };
