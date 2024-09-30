@@ -7,7 +7,6 @@ import { PDFDocument, rgb } from 'pdf-lib';
 
 const PDFViewer = ({pdfFile}) => {
     const [lines, setLines] = useState([]);
-    const [redLines, setRedLines] = useState([]);
     const [isDrawing, setIsDrawing] = useState(false);
     const [isErasing, setIsErasing] = useState(false);
     const [showDrawings, setShowDrawings] = useState(true);
@@ -28,29 +27,20 @@ const PDFViewer = ({pdfFile}) => {
 
         if (isErasing) {
             // Check for both red and blue lines for erasure
-            const allLines = [...redLines, ...lines];
             let lineIndex = -1;
 
             // Check in reverse order to prioritize topmost lines
-            for (let i = allLines.length - 1; i >= 0; i--) {
-                if (isPointOnLine(allLines[i], pos)) {
+            for (let i = lines.length - 1; i >= 0; i--) {
+                if (isPointOnLine(lines[i], pos)) {
                     lineIndex = i;
                     break; // Found the topmost line clicked
                 }
             }
 
             if (lineIndex !== -1) {
-                if (lineIndex < redLines.length) {
-                    // Remove from redLines
-                    const newRedLines = [...redLines];
-                    newRedLines.splice(lineIndex, 1); // Remove the specific red line clicked
-                    setRedLines(newRedLines);
-                } else {
-                    // Remove from lines
-                    const newLines = [...lines];
-                    newLines.splice(lineIndex - redLines.length, 1); // Remove the specific line clicked
-                    setLines(newLines);
-                }
+                const newLines = [...lines];
+                newLines.splice(lineIndex - lines.length, 1); // Remove the specific line clicked
+                setLines(newLines);
             } else {
                 // If no line was clicked, consider popping the last element
                 const newLines = [...lines];
@@ -61,7 +51,7 @@ const PDFViewer = ({pdfFile}) => {
             }
         } else if (showDrawings) {
             setIsDrawing(true);
-            setLines([...lines, { points: [pos.x, pos.y] }]);
+            setLines([...lines, { points: [pos.x, pos.y], color: colorHex }]);
         }
     };
 
@@ -203,42 +193,12 @@ const PDFViewer = ({pdfFile}) => {
             }
         });
 
-        // Draw red lines (unchanged)
-        redLines.forEach(line => {
-            const points = line.points;
-            for (let i = 0; i < points.length - 2; i += 2) {
-                const x1 = points[i];
-                const y1 = points[i + 1];
-                const x2 = points[i + 2];
-                const y2 = points[i + 3];
-
-                if (showDrawings) {
-                    page.drawLine({
-                        start: { x: x1, y: page.getHeight() - y1 },
-                        end: { x: x2, y: page.getHeight() - y2 },
-                        color: rgb(1, 0, 0), // Red color remains unchanged
-                        thickness: 2,
-                    });
-                }
-            }
-        });
-
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'annotated.pdf';
         link.click();
-    };
-
-    const drawRedShape = () => {
-        // Parse the points from the textarea (collectedPoints)
-        const pointsArray = collectedPoints.split(',').map(point => parseFloat(point.trim()));
-
-        if (pointsArray.length >= 4) { // Ensure we have at least two points (x1, y1, x2, y2)
-            const newRedLine = { points: pointsArray };
-            setRedLines([...redLines, newRedLine]);
-        }
     };
 
     // Function to add shape using points from textarea and the chosen color
@@ -359,13 +319,6 @@ const PDFViewer = ({pdfFile}) => {
                 {isErasing ? 'Switch to drawing': 'Switch to eraser'}
             </button>
 
-            <button 
-                onClick={drawRedShape} 
-                disabled={lines.length === 0} // Disable when there are no shapes
-            >
-                Draw Red Shape
-            </button>
-
             {/* New button and color input */}
             <button onClick={addShapeUsingPoints}>Add shape using points from textarea</button>
             <input 
@@ -412,18 +365,6 @@ const PDFViewer = ({pdfFile}) => {
                                     key={index}
                                     points={line.points}
                                     stroke={line.color || 'black' }
-                                    strokeWidth={2}
-                                    tension={0.5}
-                                    lineCap="round"
-                                    globalCompositeOperation="source-over"
-                                />
-                            ))}
-                            {/* Render red shapes */}
-                            {redLines.map((line, index) => (
-                                <Line
-                                    key={`red-${index}`}
-                                    points={line.points}
-                                    stroke="red"
                                     strokeWidth={2}
                                     tension={0.5}
                                     lineCap="round"
