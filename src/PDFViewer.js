@@ -141,7 +141,7 @@ const PDFViewer = ({pdfFile}) => {
                     page.drawLine({
                         start: { x: x1, y: page.getHeight() - y1 },
                         end: { x: x2, y: page.getHeight() - y2 },
-                        color: colorHex, // Blue color
+                        color: rgb(0, 0, 0), // Black color
                         thickness: 2,
                     });
                 }
