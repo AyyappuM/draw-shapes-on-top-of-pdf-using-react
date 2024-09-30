@@ -1,17 +1,8 @@
-#root {
-margin-left: 50px;
+.react-pdf__Page__annotations.annotationLayer {
+    width: 0px !important;
+    height: 0px !important;
 }
-canvas {
-margin-top: 20px;
-}
-div {
-margin-bottom: 20px;
-}
-margin-right {
-}
-button {
-margin-right: 10px;
-}
-input {
-margin-right: 10px;
+
+.outer_div {
+	padding-left: 50px;
 }

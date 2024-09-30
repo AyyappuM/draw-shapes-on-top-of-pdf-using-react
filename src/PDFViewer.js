@@ -361,7 +361,7 @@ const PDFViewer = ({pdfFile}) => {
     ).toString();
     
     return (
-        <div>
+        <div class="outer_div">
             <h2>PDF Viewer with freehand drawing</h2>
 
             <div>
@@ -417,37 +417,35 @@ const PDFViewer = ({pdfFile}) => {
                 style={{ width: 'calc(100% - 20px)', height: '100px', marginTop: '20px', marginLeft: '10px', marginRight: '10px', boxSizing: 'border-box' }}
             />
             <div>
-                    <p>Current Page: {currentPage}</p>
-                </div>
-            <div style={{ overflowY: 'scroll', height: '80vh' }} onScroll={handleScroll} ref={pdfRef}>
+                <p>Current Page: {currentPage}</p>
+            </div>
+            <div id="scroll_div" style={{ overflowY: 'scroll', height: '80vh', position: 'relative', width: `${pageWidth}px`, height: `${pageHeight}px` }} onScroll={handleScroll} ref={pdfRef}>
                 
                 <Document file={pdfFile} onLoadSuccess={onLoadSuccess}>
                     {Array.from(new Array(numPages), (el, index) => (
-                      <div key={`page_${index + 1}`} ref={pageRefs.current[index]} style={{ padding: '20px' }}>
+                      <div key={`page_${index + 1}`} ref={pageRefs.current[index]} >
                         <Page pageNumber={index + 1} renderTextLayer={false} />
                       </div>
                     ))}
                 </Document>
 
-                
-                <div style={{ position: 'absolute', top: 0, left: 0 }}>
-                    <Stage ref={stageRef} width={pageWidth} height={pageHeight} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
-                        <Layer visible={showDrawings}>
-                            {/* Render blue shapes */}
-                            {lines.map((line, index) => (
-                                <Line
-                                    key={index}
-                                    points={line.points}
-                                    stroke={line.color || 'black' }
-                                    strokeWidth={2}
-                                    tension={0.5}
-                                    lineCap="round"
-                                    globalCompositeOperation="source-over"
-                                />
-                            ))}
-                        </Layer>
-                    </Stage>
-                </div>
+                    <div style={{ position: 'absolute', top: 0, left: 0 }}>
+                        <Stage ref={stageRef} width={pageWidth} height={pageHeight} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
+                            <Layer visible={showDrawings}>
+                                {lines.map((line, index) => (
+                                    <Line
+                                        key={index}
+                                        points={line.points}
+                                        stroke={line.color || 'black' }
+                                        strokeWidth={2}
+                                        tension={0.5}
+                                        lineCap="round"
+                                        globalCompositeOperation="source-over"
+                                    />
+                                ))}
+                            </Layer>
+                        </Stage>
+                    </div>
             </div>         
         </div>
     );
