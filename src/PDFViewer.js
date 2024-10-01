@@ -13,15 +13,19 @@ const PDFViewer = ({pdfFile}) => {
     const [colorHex, setColorHex] = useState('#000000'); // Default to black
     const [newOrigin, setNewOrigin] = useState({ x: 0, y: 0 }); // New state for origin coordinates
     const [collectedPoints, setCollectedPoints] = useState(''); // New state to hold the points for the textarea
-    const stageRef = useRef(null);
+    const stageRefs = useRef([]);
     const pdfRef = useRef(null);
     const pageRefs = useRef([]); 
     const [coordinates, setCoordinates] = useState({x1: '', y1: '', x2: '', y2: ''});
     const scale = 2;
     const [pageWidth, setPageWidth] = useState(0);
     const [pageHeight, setPageHeight] = useState(0);
+    const [pageWidths, setPageWidths] = useState([]);
+    const [pageHeights, setPageHeights] = useState([]);
     const [numPages, setNumPages] = React.useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [currentActivePage, setCurrentActivePage] = useState(1);
+    const [currentStage, setCurrentStage] = useState(null);
 
     const onLoadSuccess = ({ numPages }) => {
         setNumPages(numPages);
@@ -32,10 +36,11 @@ const PDFViewer = ({pdfFile}) => {
 
     // Handle scroll event to update current page
     const handleScroll = () => {
+        setCurrentStage(null);
         if (pdfRef.current) {
-          console.log('Scroll event triggered'); // Debugging log
+          //console.log('Scroll event triggered'); // Debugging log
           const scrollTop = pdfRef.current.scrollTop; // Get current scroll position
-          console.log('scrollTop', scrollTop);
+          //console.log('scrollTop', scrollTop);
           let foundPage = 1; // Default to the first page
           let cumulativeHeight = 0;
 
@@ -45,14 +50,14 @@ const PDFViewer = ({pdfFile}) => {
             cumulativeHeight += pageHeight; // Update cumulative height
 
             // If scrollTop is less than cumulative height, we've found the current page
-            console.log('cumulativeHeight', cumulativeHeight);
+            //console.log('cumulativeHeight', cumulativeHeight);
             if (scrollTop < cumulativeHeight) {
               foundPage = i + 1; // Page number is index + 1
               break; // Exit the loop once the current page is found
             }
           }
 
-          console.log('foundPage', foundPage);
+          //console.log('foundPage', foundPage);
           // Update the current page only if it changes
           if (foundPage !== currentPage) {
             setCurrentPage(foundPage); // Update current page if it changes
@@ -68,13 +73,13 @@ const PDFViewer = ({pdfFile}) => {
           // Ensure to remove any existing event listeners before adding
           pdfContainer.removeEventListener('scroll', handleScroll);
           pdfContainer.addEventListener('scroll', handleScroll);
-          console.log('Scroll event listener added'); // Confirm the listener is added
+          //console.log('Scroll event listener added'); // Confirm the listener is added
         }
 
         return () => {
           if (pdfContainer) {
             pdfContainer.removeEventListener('scroll', handleScroll);
-            console.log('Scroll event listener removed'); // Confirm the listener is removed
+            //console.log('Scroll event listener removed'); // Confirm the listener is removed
           }
         };
     }, [currentPage, numPages]);
@@ -84,8 +89,14 @@ const PDFViewer = ({pdfFile}) => {
         console.log(`Current page: ${pageNumber}`); // Log the current page
     };
 
-    const handleMouseDown = (e) => {
-        const pos = stageRef.current.getPointerPosition();
+    const handleMouseDown = (pageIndex, e) => {
+        setCurrentActivePage(pageIndex+1);
+        console.log('pageIndex: ', pageIndex);
+        const stage = stageRefs.current[pageIndex];
+        //console.log('stage ', stage);
+        if (!stage) return;
+        const pos = stage.getPointerPosition();
+        console.log('pos ', pos);
 
         if (isErasing) {
             // Check for both red and blue lines for erasure
@@ -113,13 +124,28 @@ const PDFViewer = ({pdfFile}) => {
             }
         } else if (showDrawings) {
             setIsDrawing(true);
-            setLines([...lines, { points: [pos.x, pos.y], color: colorHex }]);
+            setLines([...lines, { points: [pos.x, pos.y], color: colorHex, page: currentActivePage }]);
         }
     };
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (pageIndex, e) => {            
+        setCurrentActivePage(pageIndex+1);
+
+        if (currentStage !== null && e.target._id !== currentStage) {
+            setCurrentStage(e.target._id); // Update the current target ID
+            console.log('exceeded'); // stop drawing after this
+            setIsDrawing(false);
+            return;
+        }
+
+        // Update target ID on the first move
+        if (currentStage === null) {
+            setCurrentStage(e.target._id);
+        }
+
         if (isDrawing && showDrawings) {
-            const stage = stageRef.current;
+            const stage = stageRefs.current[pageIndex];
+            if (!stage) return;
             const point = stage.getPointerPosition();
             let lastLine = lines[lines.length - 1];
             lastLine.points = lastLine.points.concat([point.x, point.y]);
@@ -189,7 +215,7 @@ const PDFViewer = ({pdfFile}) => {
             scale: 2,
         });
         const pdfPageDataURL = pdfPage.toDataURL("image/jpeg");
-        const drawingsDataURL = stageRef.current.toDataURL({pixelRatio: 2});
+        const drawingsDataURL = stageRefs.current[currentPage].toDataURL({pixelRatio: 2});
         const pdf = new jsPDF("portrait", "pt", "a4");
         pdf.addImage(pdfPageDataURL, "JPEG", 0, 0, pageWidth, pageHeight);
         pdf.save("annotated_sample.pdf");
@@ -227,33 +253,35 @@ const PDFViewer = ({pdfFile}) => {
 
     const downloadPDFWithAnnotations = async () => {
         const pdfDoc = await initializePDF(pdfFile);
-        const page = pdfDoc.getPage(0);
+        const page = pdfDoc.getPage(1);
 
 
-        // Draw blue lines
-        lines.forEach(line => {
-            const points = line.points;
-            const { r, g, b } = hexToRgb(line.color || '#000000'); // Use default color if line.color is undefined
+        pdfDoc.getPages().forEach((page, pageIndex) => {
+            lines.forEach(line => {
+                const points = line.points;
+                const { r, g, b } = hexToRgb(line.color || '#000000'); // Use default color if line.color is undefined
 
-            for (let i = 0; i < points.length - 2; i += 2) {
-                const x1 = points[i];
-                const y1 = points[i + 1];
-                const x2 = points[i + 2];
-                const y2 = points[i + 3];
+                for (let i = 0; i < points.length - 2; i += 2) {
+                    const x1 = points[i];
+                    const y1 = points[i + 1];
+                    const x2 = points[i + 2];
+                    const y2 = points[i + 3];
 
-                console.log(page.getHeight());
-                console.log(page.getWidth());
-
-                if (showDrawings) {
-                    page.drawLine({
-                        start: { x: x1, y: page.getHeight() - y1 },
-                        end: { x: x2, y: page.getHeight() - y2 },
-                        color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
-                        thickness: 2,
-                    });
+                    console.log(page.getHeight());
+                    console.log(page.getWidth());
+                    console.log('line.page ', line.page);
+                    console.log('pageIndex ', pageIndex);
+                    if (showDrawings && line.page === pageIndex + 1) {
+                        page.drawLine({
+                            start: { x: x1, y: page.getHeight() - y1 },
+                            end: { x: x2, y: page.getHeight() - y2 },
+                            color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
+                            thickness: 2,
+                        });
+                    }
                 }
-            }
-        });
+            });
+        });        
 
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
@@ -271,7 +299,8 @@ const PDFViewer = ({pdfFile}) => {
         if (pointsArray.length >= 4) { // Ensure we have at least two points (x1, y1, x2, y2)
             const newShape = {
                 points: pointsArray.map((point, index) => index % 2 === 0 ? point + newOrigin.x : point + newOrigin.y), // Adjust for new origin
-                color: colorHex
+                color: colorHex,
+                page: currentActivePage
             };
             setLines([...lines, newShape]);
         }
@@ -287,7 +316,7 @@ const PDFViewer = ({pdfFile}) => {
 
             // Only add the line if all coordinates are valid
             if (!isNaN(parsedX1) && !isNaN(parsedY1) && !isNaN(parsedX2) && !isNaN(parsedY2)) {
-                const newLine = { points: [parsedX1, parsedY1, parsedX2, parsedY2], color: colorHex };
+                const newLine = { points: [parsedX1, parsedY1, parsedX2, parsedY2], color: colorHex, page: currentActivePage };
                 setLines([...lines, newLine]);
             }
             
@@ -321,10 +350,12 @@ const PDFViewer = ({pdfFile}) => {
     }, [lines]);
 
     useEffect(() => {
-        const stage = stageRef.current;
-        stage.width(pageWidth);
-        stage.height(pageHeight);
-    });
+        if (stageRefs.current[currentPage]) {
+          const stage = stageRefs.current[currentPage];
+          stage.width(pageWidth);
+          stage.height(pageHeight);
+        }
+    }, [currentPage, pageWidth, pageHeight]); 
 
     useEffect(() => {
         const handleMouseUp = (e) => {
@@ -424,28 +455,37 @@ const PDFViewer = ({pdfFile}) => {
                 <Document file={pdfFile} onLoadSuccess={onLoadSuccess}>
                     {Array.from(new Array(numPages), (el, index) => (
                       <div key={`page_${index + 1}`} ref={pageRefs.current[index]} >
-                        <Page pageNumber={index + 1} renderTextLayer={false} />
+                        <Page pageNumber={index + 1} renderTextLayer={false}>
+                        <div style={{ position: 'absolute', top: 0, left: 0 }}>
+                            <Stage ref={(el) => (stageRefs.current[index] = el)} width={pageWidth} height={pageHeight}
+                                onMouseDown={(e) => {
+                                    handleMouseDown(index, e);
+                                }}
+                                onMouseMove={(e) => {
+                                    handleMouseMove(index, e);
+                                }}
+                                onMouseUp={handleMouseUp}>
+                                <Layer visible={showDrawings}>
+                                    {lines
+                                        .filter((line) => line.page === index+1)
+                                        .map((line, i) => (
+                                        <Line
+                                            key={i}
+                                            points={line.points}
+                                            stroke={line.color || 'black' }
+                                            strokeWidth={2}
+                                            tension={0.5}
+                                            lineCap="round"
+                                            globalCompositeOperation="source-over"
+                                        />
+                                    ))}
+                                </Layer>
+                            </Stage>
+                        </div>
+                        </Page>
                       </div>
                     ))}
-                </Document>
-
-                    <div style={{ position: 'absolute', top: 0, left: 0 }}>
-                        <Stage ref={stageRef} width={pageWidth} height={pageHeight} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
-                            <Layer visible={showDrawings}>
-                                {lines.map((line, index) => (
-                                    <Line
-                                        key={index}
-                                        points={line.points}
-                                        stroke={line.color || 'black' }
-                                        strokeWidth={2}
-                                        tension={0.5}
-                                        lineCap="round"
-                                        globalCompositeOperation="source-over"
-                                    />
-                                ))}
-                            </Layer>
-                        </Stage>
-                    </div>
+                </Document>                    
             </div>         
         </div>
     );
