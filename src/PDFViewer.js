@@ -26,6 +26,7 @@ const PDFViewer = ({pdfFile}) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [currentActivePage, setCurrentActivePage] = useState(1);
     const [currentStage, setCurrentStage] = useState(null);
+    const isDrawingRef = useRef(false);
 
     const onLoadSuccess = ({ numPages }) => {
         setNumPages(numPages);
@@ -90,13 +91,14 @@ const PDFViewer = ({pdfFile}) => {
     };
 
     const handleMouseDown = (pageIndex, e) => {
+        isDrawingRef.current = true;
         setCurrentActivePage(pageIndex+1);
-        console.log('pageIndex: ', pageIndex);
+        //console.log('pageIndex: ', pageIndex);
         const stage = stageRefs.current[pageIndex];
         //console.log('stage ', stage);
         if (!stage) return;
         const pos = stage.getPointerPosition();
-        console.log('pos ', pos);
+        //console.log('pos ', pos);
 
         if (isErasing) {
             // Check for both red and blue lines for erasure
@@ -128,13 +130,25 @@ const PDFViewer = ({pdfFile}) => {
         }
     };
 
+    const handleMouseLeave = () => {
+        isDrawingRef.current = false;
+        console.log('left');
+        setIsDrawing(false); // Stop drawing when the mouse leaves the stage
+        return;
+    };
+
     const handleMouseMove = (pageIndex, e) => {            
-        setCurrentActivePage(pageIndex+1);
+        if (!isDrawingRef.current) return;
+        /*
+        //console.log('point: ', point);
 
         if (currentStage !== null && e.target._id !== currentStage) {
+        //if (point.x > pageWidth || point.x < 0 || point.y < 0 || point.y > pageHeight) {
             setCurrentStage(e.target._id); // Update the current target ID
-            console.log('exceeded'); // stop drawing after this
+            //console.log('exceeded'); // stop drawing after this
             setIsDrawing(false);
+            setLines([...lines]); // Finalize the current line
+            setCurrentStage(null); // Reset stage tracking
             return;
         }
 
@@ -142,11 +156,13 @@ const PDFViewer = ({pdfFile}) => {
         if (currentStage === null) {
             setCurrentStage(e.target._id);
         }
+        */
 
         if (isDrawing && showDrawings) {
+            setCurrentActivePage(pageIndex+1);
             const stage = stageRefs.current[pageIndex];
             if (!stage) return;
-            const point = stage.getPointerPosition();
+            const point = stage.getPointerPosition();          
             let lastLine = lines[lines.length - 1];
             lastLine.points = lastLine.points.concat([point.x, point.y]);
             lines.splice(lines.length - 1, 1, lastLine);
@@ -158,6 +174,7 @@ const PDFViewer = ({pdfFile}) => {
     };
 
     const handleMouseUp = (e) => {
+        isDrawingRef.current = false;
         if (showDrawings) {
             setIsDrawing(false);
         }
@@ -239,6 +256,17 @@ const PDFViewer = ({pdfFile}) => {
         return { r, g, b };
     };
 
+    const interpolatePoints = (x1, y1, x2, y2, numPoints = 10) => {
+        const points = [];
+        for (let i = 0; i <= numPoints; i++) {
+            const t = i / numPoints;
+            const x = x1 + t * (x2 - x1);
+            const y = y1 + t * (y2 - y1);
+            points.push({ x, y });
+        }
+        return points;
+    };
+
     const initializePDF = async (pdfFile) => {
         const existingPdfBytes = await fetch(pdfFile).then(res => res.arrayBuffer());
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
@@ -266,18 +294,22 @@ const PDFViewer = ({pdfFile}) => {
                     const y1 = points[i + 1];
                     const x2 = points[i + 2];
                     const y2 = points[i + 3];
-
+                    /*
                     console.log(page.getHeight());
                     console.log(page.getWidth());
                     console.log('line.page ', line.page);
                     console.log('pageIndex ', pageIndex);
+                    */
                     if (showDrawings && line.page === pageIndex + 1) {
-                        page.drawLine({
-                            start: { x: x1, y: page.getHeight() - y1 },
-                            end: { x: x2, y: page.getHeight() - y2 },
-                            color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
-                            thickness: 2,
-                        });
+                        const interpolatedPoints = interpolatePoints(x1, y1, x2, y2, 20); // Use 20 extra points for smoothing
+                        for (let j = 0; j < interpolatedPoints.length - 1; j++) {
+                            page.drawLine({
+                                start: { x: x1, y: page.getHeight() - y1 },
+                                end: { x: x2, y: page.getHeight() - y2 },
+                                color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
+                                thickness: 2,
+                            });
+                        }
                     }
                 }
             });
@@ -346,7 +378,7 @@ const PDFViewer = ({pdfFile}) => {
     }, [numPages]);
 
     useEffect(() => {
-        console.log('Current lines:', lines);
+        //console.log('Current lines:', lines);
     }, [lines]);
 
     useEffect(() => {
@@ -450,7 +482,7 @@ const PDFViewer = ({pdfFile}) => {
             <div>
                 <p>Current Page: {currentPage}</p>
             </div>
-            <div id="scroll_div" style={{ overflowY: 'scroll', height: '80vh', position: 'relative', width: `${pageWidth}px`, height: `${pageHeight}px` }} onScroll={handleScroll} ref={pdfRef}>
+            <div id="scroll_div" style={{ overflowY: 'scroll', height: '80vh', position: 'relative', width: `${pageWidth+100}px`, height: `${pageHeight}px` }} onScroll={handleScroll} ref={pdfRef}>
                 
                 <Document file={pdfFile} onLoadSuccess={onLoadSuccess}>
                     {Array.from(new Array(numPages), (el, index) => (
@@ -464,6 +496,7 @@ const PDFViewer = ({pdfFile}) => {
                                 onMouseMove={(e) => {
                                     handleMouseMove(index, e);
                                 }}
+                                onMouseLeave={handleMouseLeave}
                                 onMouseUp={handleMouseUp}>
                                 <Layer visible={showDrawings}>
                                     {lines
