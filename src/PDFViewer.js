@@ -90,6 +90,20 @@ const PDFViewer = ({pdfFile}) => {
         console.log(`Current page: ${pageNumber}`); // Log the current page
     };
 
+    
+
+    const handleMouseEnter = (pageIndex) => {
+        const stage = stageRefs.current[pageIndex];
+        if (!stage) return;
+
+        const pos = stage.getPointerPosition();
+        if (pos) {
+            setCurrentActivePage(pageIndex + 1);
+            // Do not start drawing here
+        }
+    };
+
+
     const handleMouseDown = (pageIndex, e) => {
         isDrawingRef.current = true;
         setCurrentActivePage(pageIndex+1);
@@ -497,6 +511,7 @@ const PDFViewer = ({pdfFile}) => {
                                     handleMouseMove(index, e);
                                 }}
                                 onMouseLeave={handleMouseLeave}
+                                onMouseEnter={() => handleMouseEnter(index)} 
                                 onMouseUp={handleMouseUp}>
                                 <Layer visible={showDrawings}>
                                     {lines
