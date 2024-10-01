@@ -296,38 +296,31 @@ const PDFViewer = ({pdfFile}) => {
 
     const downloadPDFWithAnnotations = async () => {
         const pdfDoc = await initializePDF(pdfFile);
-        //const page = pdfDoc.getPage(1);
-
 
         pdfDoc.getPages().forEach((page, pageIndex) => {
             lines.forEach(line => {
                 const points = line.points;
-                const { r, g, b } = hexToRgb(line.color || '#000000');
+                const { r, g, b } = hexToRgb(line.color || '#000000'); // Use default color if line.color is undefined
 
-                for (let i = 0; i < points.length - 2; i += 2) {
-                    const x1 = points[i];
-                    const y1 = points[i + 1];
-                    const x2 = points[i + 2];
-                    const y2 = points[i + 3];
+                // Check if we should show the drawing for the current page
+                if (showDrawings && line.page === pageIndex + 1) {
+                    for (let i = 0; i < points.length - 2; i += 2) {
+                        const x1 = points[i];
+                        const y1 = points[i + 1];
+                        const x2 = points[i + 2];
+                        const y2 = points[i + 3];
 
-                    if (showDrawings && line.page === pageIndex + 1) {
-                        const interpolatedPoints = interpolatePoints(x1, y1, x2, y2, 100);
-                        for (let j = 0; j < interpolatedPoints.length - 1; j++) {
-                            const startPoint = interpolatedPoints[j];
-                            const endPoint = interpolatedPoints[j + 1];
-
-                            // Draw the line segment between each pair of interpolated points
-                            page.drawLine({
-                                start: { x: startPoint.x, y: page.getHeight() - startPoint.y },
-                                end: { x: endPoint.x, y: page.getHeight() - endPoint.y },
-                                color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
-                                thickness: 2,
-                            });
-                        }
+                        // Draw the line directly from the stored points
+                        page.drawLine({
+                            start: { x: x1, y: page.getHeight() - y1 },
+                            end: { x: x2, y: page.getHeight() - y2 },
+                            color: rgb(r / 255, g / 255, b / 255), // Use the converted RGB color
+                            thickness: 2,
+                        });
                     }
                 }
             });
-        });        
+        });
 
         const pdfBytes = await pdfDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
