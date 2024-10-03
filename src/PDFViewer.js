@@ -251,7 +251,7 @@ const PDFViewer = ({pdfFile}) => {
                 scale: 3, // Higher scale for better quality
             });
 
-            const pdfPageDataURL = pdfPage.toDataURL("image/png"); // Use PNG for better quality
+            const pdfPageDataURL = pdfPage.toDataURL("image/png", 1.0); // Use PNG for better quality
             
             // Add the captured image to the PDF
             pdf.addImage(pdfPageDataURL, "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
@@ -502,7 +502,7 @@ const PDFViewer = ({pdfFile}) => {
             <div>
                 <p>Current Page: {currentPage}</p>
             </div>
-            <div id="scroll_div" style={{ overflowY: 'scroll', height: '80vh', position: 'relative', width: `${pageWidth+100}px`, height: `${pageHeight}px` }} onScroll={handleScroll} ref={pdfRef}>
+            <div id="scroll_div" style={{ overflowY: 'scroll', height: '80vh', position: 'relative', width: `${pageWidth}px`, height: `${pageHeight}px` }} onScroll={handleScroll} ref={pdfRef}>
                 
                 <Document file={pdfFile} onLoadSuccess={onLoadSuccess}>
                     {Array.from(new Array(numPages), (el, index) => (
