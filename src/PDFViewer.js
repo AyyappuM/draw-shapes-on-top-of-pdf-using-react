@@ -528,7 +528,7 @@ const PDFViewer = ({pdfFile}) => {
                                             points={line.points}
                                             stroke={line.color || 'black' }
                                             strokeWidth={2}
-                                            tension={0.5}
+                                            tension={0}
                                             lineCap="round"
                                             globalCompositeOperation="source-over"
                                         />
