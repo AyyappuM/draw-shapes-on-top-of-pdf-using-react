@@ -242,13 +242,26 @@ const PDFViewer = ({pdfFile}) => {
 
 
     const downloadPDF = async () => {
-        const pdfPage = await html2canvas(pdfRef.current, {
-            scale: 2,
-        });
-        const pdfPageDataURL = pdfPage.toDataURL("image/jpeg");
-        const drawingsDataURL = stageRefs.current[currentPage].toDataURL({pixelRatio: 2});
         const pdf = new jsPDF("portrait", "pt", "a4");
-        pdf.addImage(pdfPageDataURL, "JPEG", 0, 0, pageWidth, pageHeight);
+
+        // Loop through each page and capture the content
+        for (let i = 0; i < numPages; i++) {
+            // Ensure that you're capturing the specific page container instead of the whole scrollable div
+            const pdfPage = await html2canvas(pageRefs.current[i].current, {
+                scale: 3, // Higher scale for better quality
+            });
+
+            const pdfPageDataURL = pdfPage.toDataURL("image/png"); // Use PNG for better quality
+            
+            // Add the captured image to the PDF
+            pdf.addImage(pdfPageDataURL, "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+
+            // Add a new page if it's not the last one
+            if (i < numPages - 1) {
+                pdf.addPage();
+            }
+        }
+
         pdf.save("annotated_sample.pdf");
     };
 
